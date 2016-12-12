@@ -1,0 +1,6 @@
+{
+  "name": "PracticalMachineLearningCourseraProject",
+  "tagline": "course project for Practical Machine Learning Coursera course",
+  "body": "## README\r\n\r\nThis repo is for my course project for the Practical Machine Learning Coursera course, with Johns Hopkins University.\r\n\r\nRelevant contents:\r\n\r\n-- CourseProject.Rmd: markdown file\r\n\r\n-- CourseProject.html: HTML version of markdown file",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
