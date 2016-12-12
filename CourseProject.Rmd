@@ -1,0 +1,149 @@
+---
+title: "Machine Learning Course Project"
+author: "Luke Wolcott"
+date: "December 12, 2016"
+output: html_document
+---
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+## Summmary
+
+Collecting data about activities is great for keeping track of how much we do, but what about telling us how well we are doing it?  This data set came from participants strapping into a bunch of sensors, and then doing bicep curls in five different ways.  One of those ways (A) was the correct way, the other four were common mistakes (B: throwing elbows to the front, C: lifting only halfway, D: lowering only halfway, E: throwing the hips to the front).
+
+After removing some variables with a large percentage of NAs, we split the data into 4 folds and built random forest models.  This gave us four models and four test sets, and thus four measures of out-of-sample accuracy.  When we average these together, we expect our out-of-sample accuracy to be 73%.
+
+## Data cleaning and preparing folds
+
+More information on the data set can be found at: 
+
+``` http://groupware.les.inf.puc-rio.br/har```
+
+The training data comes from this website:
+```https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv```
+
+The data is 19622x160.  There are 160 variables for each row.  But many of them are mostly NAs (see below).  Since 60 seems like plenty of variables to work with, we'll just remove those other columns. 
+
+```{r}
+library(caret)
+data <- read.csv("pml-training.csv", stringsAsFactors = FALSE, na.strings=c("", NA))
+set.seed(134)
+x <- rep(NA, 160)
+for(i in 1:160){
+      x[i] <- sum(is.na(data[,i]))
+}
+table(x)
+missing <- x > 0
+data <- data[,!missing] # remove columns with NAs
+dim(data)
+
+data <- data[,-c(1:6)] # get rid of unneeded string columns
+
+for(i in 1:53){  #convert all columns except classe into numeric
+      data[,i] <- as.numeric(data[,i])
+}
+
+```
+
+But my computer is too slow to train models on this big data set, so I'm going to randomly sample 1% of it. 
+
+```{r}
+x<- sample(1:19622, 0.01*19622, replace=FALSE)
+data <- data[x,]
+data[,54] <- as.factor(data[,54])
+dim(data)
+```
+
+
+Split it into four training sets.
+
+```{r}
+folds <- createFolds(y=data$classe, k=4)
+train1 <- data[-folds[[1]],]
+test1 <- data[folds[[1]],]
+train2 <- data[-folds[[2]],]
+test2 <- data[folds[[2]],]
+train3 <- data[-folds[[3]],]
+test3 <- data[folds[[3]],]
+train4 <- data[-folds[[4]],]
+test4 <- data[folds[[4]],]
+```
+
+
+## Modeling
+
+First we'll try a decision tree model, but then switch to random forest.
+
+```{r}
+library(caret)
+fit1dt <- train(classe~., data=train1, method="rpart")
+pred1dt <- predict(fit1dt, test1)
+sum(test1$classe == pred1dt)
+sum(test1$classe == pred1dt)/length(test1$classe)
+```
+
+So the accuracy with the decision tree model on the first chunk is only about 65%.  Not good enough.  Let's use random forests instead.
+
+```{r}
+library(caret)
+fit1 <- train(classe~., data=train1, method="rf")
+pred1 <- predict(fit1, test1)
+acc1 <- sum(test1$classe == pred1)/length(test1$classe)
+acc1
+```
+
+The accuracy with the first chunk is about 88%.  
+
+Now we'll do the other three chunks, so we can average our accuracy.
+
+```{r, cache=TRUE}
+library(caret)
+fit2 <- train(classe~., data=train2, method="rf")
+pred2 <- predict(fit2, test2)
+acc2<- sum(test2$classe == pred2)/length(test2$classe)
+fit3 <- train(classe~., data=train3, method="rf")
+pred3 <- predict(fit3, test3)
+acc3 <- sum(test3$classe == pred3)/length(test3$classe)
+fit4 <- train(classe~., data=train4, method="rf")
+pred4 <- predict(fit4, test4)
+acc4 <- sum(test4$classe == pred4)/length(test4$classe)
+```
+
+```{r}
+acc <- c(acc1, acc2, acc3, acc4)
+acc
+mean(acc)
+```
+
+So the average accuracy is about 73%.  Not great, but better than chance, which is 20%.
+
+## Applying model to test data
+
+We will import the testing CSV file, and perform the same preprocessing steps.
+
+```{r}
+test <- read.csv("pml-testing.csv", stringsAsFactors = FALSE, na.strings=c("", NA))
+x <- rep(NA, 160)
+for(i in 1:160){
+      x[i] <- sum(is.na(test[,i]))
+}
+missing <- x > 0
+test <- test[,!missing] # remove columns with NAs
+test <- test[,-c(1:6)] # get rid of unneeded string columns
+for(i in 1:53){  #convert all columns except classe into numeric
+      test[,i] <- as.numeric(test[,i])
+}
+test[,54] <- as.factor(test[,54])
+dim(test)
+```
+
+Now we predict using the first random forest model.
+
+```{r}
+pred <- predict(fit1, test)
+pred
+```
+
+I can't check my accuracy, because the classe column was removed from the test file, and a column called "problem_id" put in its place.  Nonetheless, the above predictions are what I will put into the quiz portion of this assignment.
