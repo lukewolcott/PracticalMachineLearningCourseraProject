@@ -31,16 +31,256 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h2>
-<a id="readme" class="anchor" href="#readme" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>README</h2>
+        <p>&lt;!DOCTYPE html&gt;</p>
 
-<p>This repo is for my course project for the Practical Machine Learning Coursera course, with Johns Hopkins University.</p>
+<p></p>
 
-<p>Relevant contents:</p>
+<p></p>
 
-<p>-- CourseProject.Rmd: markdown file</p>
+<p>
 
-<p>-- CourseProject.html: HTML version of markdown file</p>
+</p>
+
+<p></p>
+
+<p></p>
+
+<p></p>Machine Learning Course Project
+
+
+
+<p>
+</p>
+
+
+
+
+
+
+
+
+
+<p></p>
+
+
+
+code{white-space: pre;}
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+
+
+<div>
+
+
+
+
+
+
+
+
+
+
+
+<div id="header">
+
+
+
+<h1>
+<a id="machine-learning-course-project" class="anchor" href="#machine-learning-course-project" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Machine Learning Course Project</h1>
+<h4>
+<a id="luke-wolcott" class="anchor" href="#luke-wolcott" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><em>Luke Wolcott</em>
+</h4>
+<h4>
+<a id="december-12-2016" class="anchor" href="#december-12-2016" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a><em>December 12, 2016</em>
+</h4>
+
+</div>
+
+<div id="summmary">
+<h2>
+<a id="summmary" class="anchor" href="#summmary" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Summmary</h2>
+<p>Collecting data about activities is great for keeping track of how much we do, but what about telling us how well we are doing it? This data set came from participants strapping into a bunch of sensors, and then doing bicep curls in five different ways. One of those ways (A) was the correct way, the other four were common mistakes (B: throwing elbows to the front, C: lifting only halfway, D: lowering only halfway, E: throwing the hips to the front).</p>
+<p>After removing some variables with a large percentage of NAs, we split the data into 4 folds and built random forest models. This gave us four models and four test sets, and thus four measures of out-of-sample accuracy. When we average these together, we expect our out-of-sample accuracy to be 73%.</p>
+</div>
+
+<div id="data-cleaning-and-preparing-folds">
+<h2>
+<a id="data-cleaning-and-preparing-folds" class="anchor" href="#data-cleaning-and-preparing-folds" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data cleaning and preparing folds</h2>
+<p>More information on the data set can be found at:</p>
+<p><code>http://groupware.les.inf.puc-rio.br/har</code></p>
+<p>The training data comes from this website: <code>https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</code></p>
+<p>The data is 19622x160. There are 160 variables for each row. But many of them are mostly NAs (see below). Since 60 seems like plenty of variables to work with, we’ll just remove those other columns.</p>
+<pre><code>library(caret)
+data &lt;- read.csv("pml-training.csv", stringsAsFactors = FALSE, na.strings=c("", NA))
+set.seed(134)
+x &lt;- rep(NA, 160)
+for(i in 1:160){
+      x[i] &lt;- sum(is.na(data[,i]))
+}
+table(x)</code></pre>
+<pre><code>## x
+##     0 19216 
+##    60   100</code></pre>
+<pre><code>missing &lt;- x &gt; 0
+data &lt;- data[,!missing] # remove columns with NAs
+dim(data)</code></pre>
+<pre><code>## [1] 19622    60</code></pre>
+<pre><code>data &lt;- data[,-c(1:6)] # get rid of unneeded string columns
+
+for(i in 1:53){  #convert all columns except classe into numeric
+      data[,i] &lt;- as.numeric(data[,i])
+}</code></pre>
+<p>But my computer is too slow to train models on this big data set, so I’m going to randomly sample 1% of it.</p>
+<pre><code>x&lt;- sample(1:19622, 0.01*19622, replace=FALSE)
+data &lt;- data[x,]
+data[,54] &lt;- as.factor(data[,54])
+dim(data)</code></pre>
+<pre><code>## [1] 196  54</code></pre>
+<p>Split it into four training sets.</p>
+<pre><code>folds &lt;- createFolds(y=data$classe, k=4)
+train1 &lt;- data[-folds[[1]],]
+test1 &lt;- data[folds[[1]],]
+train2 &lt;- data[-folds[[2]],]
+test2 &lt;- data[folds[[2]],]
+train3 &lt;- data[-folds[[3]],]
+test3 &lt;- data[folds[[3]],]
+train4 &lt;- data[-folds[[4]],]
+test4 &lt;- data[folds[[4]],]</code></pre>
+</div>
+
+<div id="modeling">
+<h2>
+<a id="modeling" class="anchor" href="#modeling" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Modeling</h2>
+<p>First we’ll try a decision tree model, but then switch to random forest.</p>
+<pre><code>library(caret)
+fit1dt &lt;- train(classe~., data=train1, method="rpart")
+pred1dt &lt;- predict(fit1dt, test1)
+sum(test1$classe == pred1dt)</code></pre>
+<pre><code>## [1] 31</code></pre>
+<pre><code>sum(test1$classe == pred1dt)/length(test1$classe)</code></pre>
+<pre><code>## [1] 0.6458333</code></pre>
+<p>So the accuracy with the decision tree model on the first chunk is only about 65%. Not good enough. Let’s use random forests instead.</p>
+<pre><code>library(caret)
+fit1 &lt;- train(classe~., data=train1, method="rf")
+pred1 &lt;- predict(fit1, test1)
+acc1 &lt;- sum(test1$classe == pred1)/length(test1$classe)
+acc1</code></pre>
+<pre><code>## [1] 0.875</code></pre>
+<p>The accuracy with the first chunk is about 88%.</p>
+<p>Now we’ll do the other three chunks, so we can average our accuracy.</p>
+<pre><code>library(caret)
+fit2 &lt;- train(classe~., data=train2, method="rf")
+pred2 &lt;- predict(fit2, test2)
+acc2&lt;- sum(test2$classe == pred2)/length(test2$classe)
+fit3 &lt;- train(classe~., data=train3, method="rf")
+pred3 &lt;- predict(fit3, test3)
+acc3 &lt;- sum(test3$classe == pred3)/length(test3$classe)
+fit4 &lt;- train(classe~., data=train4, method="rf")
+pred4 &lt;- predict(fit4, test4)
+acc4 &lt;- sum(test4$classe == pred4)/length(test4$classe)</code></pre>
+<pre><code>acc &lt;- c(acc1, acc2, acc3, acc4)
+acc</code></pre>
+<pre><code>## [1] 0.8750000 0.5833333 0.7755102 0.6734694</code></pre>
+<pre><code>mean(acc)</code></pre>
+<pre><code>## [1] 0.7268282</code></pre>
+<p>So the average accuracy is about 73%. Not great, but better than chance, which is 20%.</p>
+</div>
+
+<div id="applying-model-to-test-data">
+<h2>
+<a id="applying-model-to-test-data" class="anchor" href="#applying-model-to-test-data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Applying model to test data</h2>
+<p>We will import the testing CSV file, and perform the same preprocessing steps.</p>
+<pre><code>test &lt;- read.csv("pml-testing.csv", stringsAsFactors = FALSE, na.strings=c("", NA))
+x &lt;- rep(NA, 160)
+for(i in 1:160){
+      x[i] &lt;- sum(is.na(test[,i]))
+}
+missing &lt;- x &gt; 0
+test &lt;- test[,!missing] # remove columns with NAs
+test &lt;- test[,-c(1:6)] # get rid of unneeded string columns
+for(i in 1:53){  #convert all columns except classe into numeric
+      test[,i] &lt;- as.numeric(test[,i])
+}
+test[,54] &lt;- as.factor(test[,54])
+dim(test)</code></pre>
+<pre><code>## [1] 20 54</code></pre>
+<p>Now we predict using the first random forest model.</p>
+<pre><code>pred &lt;- predict(fit1, test)
+pred</code></pre>
+<pre><code>##  [1] A A A A A E D D A A B C E A D E A A A B
+## Levels: A B C D E</code></pre>
+<p>I can’t check my accuracy, because the classe column was removed from the test file, and a column called “problem_id” put in its place. Nonetheless, the above predictions are what I will put into the quiz portion of this assignment.</p>
+</div>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
       </section>
     </div>
 
